@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Voting System</title>
+    <!-- Bootstrap CSS -->
+    <link rel="icon" type="image/x-icon" href="search.png" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      /* Custom CSS */
+      :root {
+        --primary-color: #007bff;
+        --secondary-color: #6c757d;
+        --success-color: #28a745;
+        --bg-light: #f8f9fa;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        /* background-color: var(--bg-light);*/
+        background-image: url("image.png");
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-attachment: fixed;
+      }
+
+      .container-main {
+        max-width: 900px;
+        margin-top: 50px;
+        padding: 20px;
+        background: white;
+
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .card-auth,
+      .card-module {
+        border: none;
+        border-radius: 10px;
+
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        margin-bottom: 20px;
+      }
+
+      .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        transition: all 0.3s;
+      }
+      .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+      }
+
+      .candidate-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+        cursor: pointer;
+      }
+
+      .candidate-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      .candidate-card.selected {
+        border-color: var(--success-color);
+        background-color: #e6ffed;
+        box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.25);
+      }
+
+      .results-table th {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .result-row-winner {
+        background-color: #fff3cd; /* Light warning color for winner */
+        font-weight: bold;
+      }
+
+      .alert-custom {
+        margin-top: 15px;
+        border-radius: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container container-main">
+      <h1 class="text-center mb-4 text-primary">Secure Online Voting System</h1>
+
+      <!-- Navigation Bar -->
+      <ul
+        class="nav nav-pills mb-4 justify-content-center"
+        id="nav-tabs"
+        style="display: none"
+      >
+        <li class="nav-item" id="nav-item-dashboard">
+          <a class="nav-link" href="#" data-page="dashboard">Dashboard</a>
+        </li>
+        <li class="nav-item" id="nav-item-admin" style="display: none">
+          <a class="nav-link" href="#" data-page="admin">Admin Panel</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" data-page="results">Live Results</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link text-danger" href="#" id="logout-btn"
+            >Logout (<span id="user-type-display">User</span>)</a
+          >
+        </li>
+      </ul>
+
+      <!-- Global Alert Placeholder -->
+      <div id="alert-placeholder"></div>
+
+      <!-- --- PAGES CONTAINER --- -->
+      <div id="pages-container">
+        <!-- 1. LOGIN/SIGNUP PAGE -->
+        <div id="page-auth" class="page-content">
+          <div class="row justify-content-center">
+            <div class="col-md-6">
+              <div class="card card-auth p-4">
+                <h2 class="text-center mb-4 text-secondary" id="auth-title">
+                  Voter Login
+                </h2>
+
+                <!-- Login Form -->
+                <form id="login-form">
+                  <div class="mb-3">
+                    <label for="login-aadhar" class="form-label"
+                      >Aadhar Card Number (12 Digits)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="login-aadhar"
+                      required
+                      pattern="\d{12}"
+                      title="Must be exactly 12 digits"
+                    />
+                  </div>
+                  <div class="mb-3">
+                    <label for="login-password" class="form-label"
+                      >Password</label
+                    >
+                    <input
+                      type="password"
+                      class="form-control"
+                      id="login-password"
+                      required
+                    />
+                  </div>
+                  <div class="mb-3 form-check">
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      id="login-admin"
+                    />
+                    <label class="form-check-label" for="login-admin"
+                      >Login as Admin</label
+                    >
+                  </div>
+                  <button type="submit" class="btn btn-primary w-100">
+                    Sign In
+                  </button>
+                </form>
+
+                <!-- Signup Form (Hidden initially) -->
+                <form id="signup-form" style="display: none">
+                  <div class="mb-3">
+                    <label for="signup-aadhar" class="form-label"
+                      >Aadhar Card Number (Unique ID)</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="signup-aadhar"
+                      required
+                      pattern="\d{12}"
+                      title="Must be exactly 12 digits"
+                    />
+                  </div>
+                  <div class="mb-3">
+                    <label for="signup-name" class="form-label"
+                      >Full Name</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="signup-name"
+                      required
+                    />
+                  </div>
+                  <div class="mb-3">
+                    <label for="signup-email" class="form-label">Email</label>
+                    <input
+                      type="email"
+                      class="form-control"
+                      id="signup-email"
+                    />
+                  </div>
+                  <div class="mb-3">
+                    <label for="signup-phone" class="form-label">Phone</label>
+                    <input type="text" class="form-control" id="signup-phone" />
+                  </div>
+                  <div class="mb-3">
+                    <label for="signup-password" class="form-label"
+                      >Password</label
+                    >
+                    <input
+                      type="password"
+                      class="form-control"
+                      id="signup-password"
+                      required
+                      minlength="6"
+                    />
+                  </div>
+                  <button type="submit" class="btn btn-success w-100">
+                    Register
+                  </button>
+                </form>
+
+                <p class="text-center mt-3">
+                  <a href="#" id="toggle-auth-link" class="text-secondary">
+                    Need an account? Sign Up
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. USER DASHBOARD PAGE -->
+        <div id="page-dashboard" class="page-content" style="display: none">
+          <h2 class="mb-4 text-center text-primary">Welcome, Voter!</h2>
+
+          <!-- User Profile Card -->
+          <div class="card card-module mb-4 p-4">
+            <h5 class="card-title text-success">Your Profile & Status</h5>
+            <div id="user-profile-details">
+              <p><strong>Name:</strong> <span id="profile-name"></span></p>
+              <p>
+                <strong>Aadhar ID:</strong> <span id="profile-aadhar"></span>
+              </p>
+              <p>
+                <strong>Voting Status:</strong>
+                <span id="profile-voted" class="badge bg-danger"
+                  >NOT VOTED</span
+                >
+              </p>
+            </div>
+
+            <hr />
+            <button
+              class="btn btn-sm btn-secondary"
+              data-bs-toggle="modal"
+              data-bs-target="#passwordModal"
+            >
+              Change Password
+            </button>
+          </div>
+
+          <!-- Voting Module -->
+          <div class="card card-module p-4">
+            <h5 class="card-title text-primary">Cast Your Vote</h5>
+            <p class="text-danger" id="voting-status-message">
+              Please select a candidate below to cast your vote.
+            </p>
+
+            <div id="candidate-list" class="row">
+              <!-- Candidates will be loaded here -->
+              <p class="text-center text-muted">Loading candidates...</p>
+            </div>
+
+            <button
+              class="btn btn-success mt-3 w-100"
+              id="cast-vote-btn"
+              disabled
+            >
+              Cast Vote
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. ADMIN PANEL PAGE -->
+        <div id="page-admin" class="page-content" style="display: none">
+          <h2 class="mb-4 text-center text-primary">
+            Admin Candidate Management
+          </h2>
+
+          <!-- Add/Update Candidate Form -->
+          <div class="card card-module mb-4 p-4">
+            <h5 class="card-title text-success">Manage Candidate</h5>
+            <form id="candidate-form">
+              <input type="hidden" id="candidate-id" />
+              <div class="row">
+                <div class="col-md-5 mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="candidate-name"
+                    placeholder="Candidate Name"
+                    required
+                  />
+                </div>
+                <div class="col-md-4 mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="candidate-party"
+                    placeholder="Party Name"
+                    required
+                  />
+                </div>
+                <div class="col-md-3 mb-3">
+                  <button
+                    type="submit"
+                    class="btn btn-primary w-100"
+                    id="candidate-submit-btn"
+                  >
+                    Add New
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Candidate List for Editing -->
+          <div class="card card-module p-4">
+            <h5 class="card-title text-primary">
+              Existing Candidates (Click to Edit/Delete)
+            </h5>
+            <table class="table table-striped table-hover">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Party</th>
+                  <th>ID</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="admin-candidate-list">
+                <tr>
+                  <td colspan="4" class="text-center text-muted">
+                    Loading candidates...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 4. LIVE RESULTS PAGE -->
+        <div id="page-results" class="page-content" style="display: none">
+          <h2 class="mb-4 text-center text-primary">Live Voting Results</h2>
+          <p class="text-center text-muted">
+            Results update automatically to show the current vote counts.
+          </p>
+          <div class="card card-module p-4">
+            <table class="table table-striped results-table">
+              <thead>
+                <tr>
+                  <th scope="col">Rank</th>
+                  <th scope="col">Candidate Name</th>
+                  <th scope="col">Party</th>
+                  <th scope="col">Vote Count</th>
+                </tr>
+              </thead>
+              <tbody id="live-results-body">
+                <tr>
+                  <td colspan="4" class="text-center text-muted">
+                    Fetching results...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="text-end text-sm text-muted">
+              Last updated: <span id="last-updated">N/A</span>
+            </p>
+          </div>
+        </div>
+      </div>
+      <!-- --- END PAGES CONTAINER --- -->
+    </div>
+
+    <!-- Modals -->
+    <!-- Password Change Modal -->
+    <div
+      class="modal fade"
+      id="passwordModal"
+      tabindex="-1"
+      aria-labelledby="passwordModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="passwordModalLabel">Change Password</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <form id="change-password-form">
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="current-password" class="form-label"
+                  >Current Password</label
+                >
+                <input
+                  type="password"
+                  class="form-control"
+                  id="current-password"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="new-password" class="form-label"
+                  >New Password</label
+                >
+                <input
+                  type="password"
+                  class="form-control"
+                  id="new-password"
+                  required
+                  minlength="6"
+                />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Close
+              </button>
+              <button type="submit" class="btn btn-primary">
+                Save changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      // --- CLIENT-SIDE GLOBAL STATE AND UTILITIES ---
+      let currentUser = null;
+      let isAdmin = false;
+      let selectedCandidateId = null;
+
+      const API_BASE = ""; // Since the server is running on the same origin/port
+      const AADHAR_KEY = "x-aadhar-id"; // Header key for sending ID to server
+
+      // Utility to display dynamic alerts
+      function showAlert(message, type = "info") {
+        const placeholder = document.getElementById("alert-placeholder");
+        const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show alert-custom" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+        placeholder.innerHTML = alertHtml;
+      }
+
+      // Utility for making API calls
+      async function apiFetch(url, options = {}) {
+        const headers = {
+          "Content-Type": "application/json",
+          ...options.headers,
+        };
+
+        // Inject the user's Aadhar ID for authentication on protected routes
+        if (currentUser && currentUser.aadhar) {
+          headers[AADHAR_KEY] = currentUser.aadhar;
+        }
+
+        try {
+          const response = await fetch(API_BASE + url, {
+            ...options,
+            headers: headers,
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(
+              data.message || `HTTP error! Status: ${response.status}`,
+            );
+          }
+          return data;
+        } catch (error) {
+          console.error("API Fetch Error:", error);
+          showAlert(error.message, "danger");
+          throw error;
+        }
+      }
+
+      // --- PAGE NAVIGATION ---
+      function navigate(pageId) {
+        document.querySelectorAll(".page-content").forEach((page) => {
+          page.style.display = "none";
+        });
+        document.getElementById(pageId).style.display = "block";
+
+        // Update navigation bar active state
+        document
+          .querySelectorAll(".nav-link")
+          .forEach((link) => link.classList.remove("active"));
+        const activeLink = document.querySelector(
+          `.nav-link[data-page="${pageId.replace("page-", "")}"]`,
+        );
+        if (activeLink) {
+          activeLink.classList.add("active");
+        }
+      }
+
+      function setupAppUI(isLoggedIn, userType = "user") {
+        const navTabs = document.getElementById("nav-tabs");
+        const adminNav = document.getElementById("nav-item-admin");
+        const userTypeDisplay = document.getElementById("user-type-display");
+
+        if (isLoggedIn) {
+          navTabs.style.display = "flex";
+          userTypeDisplay.textContent =
+            userType === "admin" ? "Admin" : "Voter";
+          isAdmin = userType === "admin";
+          adminNav.style.display = isAdmin ? "block" : "none";
+
+          // Initial page load after login
+          if (isAdmin) {
+            navigate("page-admin");
+            loadAdminCandidates();
+          } else {
+            navigate("page-dashboard");
+            loadUserProfile();
+            loadCandidatesForVoting();
+          }
+          loadLiveResults(); // Start periodic results refresh
+        } else {
+          navTabs.style.display = "none";
+          navigate("page-auth");
+          // Clear state
+          currentUser = null;
+          isAdmin = false;
+          selectedCandidateId = null;
+          clearInterval(window.resultsInterval);
+        }
+      }
+
+      // --- AUTH & PROFILE HANDLERS ---
+
+      document
+        .getElementById("toggle-auth-link")
+        .addEventListener("click", (e) => {
+          e.preventDefault();
+          const isLoginVisible =
+            document.getElementById("login-form").style.display !== "none";
+          document.getElementById("login-form").style.display = isLoginVisible
+            ? "none"
+            : "block";
+          document.getElementById("signup-form").style.display = isLoginVisible
+            ? "block"
+            : "none";
+          document.getElementById("auth-title").textContent = isLoginVisible
+            ? "Voter Registration"
+            : "Voter Login";
+          e.target.textContent = isLoginVisible
+            ? "Already have an account? Sign In"
+            : "Need an account? Sign Up";
+          document.getElementById("login-admin").checked = false; // Reset admin checkbox on toggle
+        });
+
+      document
+        .getElementById("signup-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const aadhar = document.getElementById("signup-aadhar").value;
+          const name = document.getElementById("signup-name").value;
+          const email = document.getElementById("signup-email").value;
+          const phone = document.getElementById("signup-phone").value;
+          const password = document.getElementById("signup-password").value;
+
+          try {
+            const result = await apiFetch("/signup", {
+              method: "POST",
+              body: JSON.stringify({ aadhar, password, name, email, phone }),
+            });
+            showAlert(result.message, "success");
+            // Switch back to login form
+            document.getElementById("toggle-auth-link").click();
+            document.getElementById("login-aadhar").value = aadhar;
+          } catch (error) {
+            // Handled by apiFetch
+          }
+        });
+
+      document
+        .getElementById("login-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const aadhar = document.getElementById("login-aadhar").value;
+          const password = document.getElementById("login-password").value;
+          const isAdmin = document.getElementById("login-admin").checked;
+
+          try {
+            const result = await apiFetch("/login", {
+              method: "POST",
+              body: JSON.stringify({ aadhar, password, isAdmin }),
+            });
+
+            currentUser = { aadhar: result.aadhar, userType: result.userType };
+            showAlert(result.message, "success");
+            setupAppUI(true, result.userType);
+          } catch (error) {
+            // Handled by apiFetch
+          }
+        });
+
+      document.getElementById("logout-btn").addEventListener("click", (e) => {
+        e.preventDefault();
+        showAlert("You have been logged out.", "info");
+        setupAppUI(false);
+      });
+
+      document
+        .getElementById("change-password-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const currentPassword =
+            document.getElementById("current-password").value;
+          const newPassword = document.getElementById("new-password").value;
+
+          try {
+            const result = await apiFetch("/profile/password", {
+              method: "PUT",
+              body: JSON.stringify({ currentPassword, newPassword }),
+            });
+            showAlert(result.message, "success");
+            // Close modal
+            const modalElement = document.getElementById("passwordModal");
+            const modal =
+              bootstrap.Modal.getInstance(modalElement) ||
+              new bootstrap.Modal(modalElement);
+            modal.hide();
+            e.target.reset(); // Clear form
+          } catch (error) {
+            // Handled by apiFetch
+          }
+        });
+
+      async function loadUserProfile() {
+        try {
+          const profile = await apiFetch("/profile");
+          document.getElementById("profile-name").textContent = profile.name;
+          document.getElementById("profile-aadhar").textContent =
+            profile.aadhar;
+          const votedBadge = document.getElementById("profile-voted");
+          votedBadge.textContent = profile.hasVoted
+            ? "VOTED (LOCKED)"
+            : "NOT VOTED";
+          votedBadge.classList.remove("bg-danger", "bg-success");
+          votedBadge.classList.add(
+            profile.hasVoted ? "bg-success" : "bg-danger",
+          );
+
+          const voteBtn = document.getElementById("cast-vote-btn");
+          const voteMsg = document.getElementById("voting-status-message");
+
+          if (profile.hasVoted) {
+            voteBtn.disabled = true;
+            voteMsg.classList.remove("text-danger");
+            voteMsg.classList.add("text-success");
+            voteMsg.textContent =
+              "Thank you! Your vote has been recorded, and your account is locked from further voting.";
+          } else {
+            voteBtn.disabled = true; // Still disabled until a selection is made
+            voteMsg.classList.remove("text-success");
+            voteMsg.classList.add("text-danger");
+            voteMsg.textContent =
+              "Please select a candidate below to cast your vote.";
+          }
+        } catch (error) {
+          console.error("Failed to load profile:", error);
+        }
+      }
+
+      // --- VOTING MODULE HANDLERS ---
+
+      async function loadCandidatesForVoting() {
+        const listDiv = document.getElementById("candidate-list");
+        try {
+          const candidates = await apiFetch("/candidates");
+          const profile = await apiFetch("/profile");
+          const hasVoted = profile.hasVoted;
+          listDiv.innerHTML = candidates
+            .map(
+              (c) => `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="candidate-card" data-id="${c.id}" ${
+                          hasVoted
+                            ? 'style="pointer-events: none; opacity: 0.6;"'
+                            : ""
+                        }>
+                            <strong>${c.name}</strong>
+                            <p class="mb-0 text-muted">${c.party}</p>
+                        </div>
+                    </div>
+                `,
+            )
+            .join("");
+
+          if (!hasVoted) {
+            listDiv.querySelectorAll(".candidate-card").forEach((card) => {
+              card.addEventListener("click", () => {
+                // Deselect all
+                listDiv
+                  .querySelectorAll(".candidate-card")
+                  .forEach((c) => c.classList.remove("selected"));
+                // Select current
+                card.classList.add("selected");
+                selectedCandidateId = card.getAttribute("data-id");
+                document.getElementById("cast-vote-btn").disabled = false;
+              });
+            });
+          } else {
+            document.getElementById("cast-vote-btn").disabled = true;
+          }
+        } catch (error) {
+          listDiv.innerHTML = `<p class="text-danger text-center">Could not load candidates. ${error.message}</p>`;
+        }
+      }
+
+      document
+        .getElementById("cast-vote-btn")
+        .addEventListener("click", async () => {
+          if (!selectedCandidateId) {
+            return showAlert(
+              "Please select a candidate before casting your vote.",
+              "warning",
+            );
+          }
+
+          try {
+            const result = await apiFetch(`/vote/${selectedCandidateId}`, {
+              method: "POST",
+            });
+            showAlert(result.message, "success");
+            // Reload UI elements
+            loadUserProfile();
+            loadCandidatesForVoting(); // Will lock UI
+            loadLiveResults(); // Update results immediately
+          } catch (error) {
+            // Handled by apiFetch
+          }
+        });
+
+      // --- RESULTS MODULE HANDLER ---
+
+      async function loadLiveResults() {
+        const body = document.getElementById("live-results-body");
+        try {
+          const results = await apiFetch("/vote/counts");
+          body.innerHTML = ""; // Clear previous results
+
+          results.forEach((r, index) => {
+            const rank = index + 1;
+            const isWinner = index === 0 && results.length > 0;
+            const rowClass = isWinner ? "result-row-winner" : "";
+
+            body.innerHTML += `
+                        <tr class="${rowClass}">
+                            <td>${rank}</td>
+                            <td>${r.name}</td>
+                            <td>${r.party}</td>
+                            <td><span class="badge bg-primary">${r.voteCount}</span></td>
+                        </tr>
+                    `;
+          });
+
+          document.getElementById("last-updated").textContent =
+            new Date().toLocaleTimeString();
+        } catch (error) {
+          body.innerHTML = `<tr><td colspan="4" class="text-danger text-center">Failed to load results.</td></tr>`;
+        }
+      }
+
+      // Set up automatic result refresh every 5 seconds
+      window.resultsInterval = setInterval(loadLiveResults, 5000);
+
+      // --- ADMIN MODULE HANDLERS ---
+
+      let candidateToEdit = null;
+
+      async function loadAdminCandidates() {
+        const body = document.getElementById("admin-candidate-list");
+        try {
+          const candidates = await apiFetch("/candidates");
+          body.innerHTML = "";
+
+          candidates.forEach((c) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                        <td>${c.name}</td>
+                        <td>${c.party}</td>
+                        <td><small class="text-muted">${c.id.substring(
+                          0,
+                          8,
+                        )}...</small></td>
+                        <td>
+                            <button class="btn btn-sm btn-info me-2 edit-btn" data-id="${
+                              c.id
+                            }">Edit</button>
+                            <button class="btn btn-sm btn-danger delete-btn" data-id="${
+                              c.id
+                            }">Delete</button>
+                        </td>
+                    `;
+            body.appendChild(row);
+          });
+
+          // Attach event listeners for edit/delete
+          body
+            .querySelectorAll(".edit-btn")
+            .forEach((btn) =>
+              btn.addEventListener("click", handleEditCandidate),
+            );
+          body
+            .querySelectorAll(".delete-btn")
+            .forEach((btn) =>
+              btn.addEventListener("click", handleDeleteCandidate),
+            );
+        } catch (error) {
+          body.innerHTML = `<tr><td colspan="4" class="text-danger text-center">Failed to load candidates.</td></tr>`;
+        }
+      }
+
+      function handleEditCandidate(e) {
+        const id = e.target.getAttribute("data-id");
+        apiFetch("/candidates")
+          .then((candidates) => {
+            candidateToEdit = candidates.find((c) => c.id === id);
+            if (candidateToEdit) {
+              document.getElementById("candidate-id").value =
+                candidateToEdit.id;
+              document.getElementById("candidate-name").value =
+                candidateToEdit.name;
+              document.getElementById("candidate-party").value =
+                candidateToEdit.party;
+              document.getElementById("candidate-submit-btn").textContent =
+                "Update Candidate";
+              document
+                .getElementById("candidate-submit-btn")
+                .classList.remove("btn-primary");
+              document
+                .getElementById("candidate-submit-btn")
+                .classList.add("btn-warning");
+              showAlert(`Editing Candidate: ${candidateToEdit.name}`, "info");
+            }
+          })
+          .catch(() =>
+            showAlert("Failed to fetch candidate details.", "danger"),
+          );
+      }
+
+      async function handleDeleteCandidate(e) {
+        const id = e.target.getAttribute("data-id");
+        if (
+          confirm(
+            `Are you sure you want to delete candidate ${id.substring(
+              0,
+              8,
+            )}...? This cannot be undone.`,
+          )
+        ) {
+          try {
+            const result = await apiFetch(`/candidates/${id}`, {
+              method: "DELETE",
+            });
+            showAlert(result.message, "success");
+            loadAdminCandidates();
+            loadLiveResults();
+          } catch (error) {
+            // Handled by apiFetch
+          }
+        }
+      }
+
+      document
+        .getElementById("candidate-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const id = document.getElementById("candidate-id").value;
+          const name = document.getElementById("candidate-name").value;
+          const party = document.getElementById("candidate-party").value;
+
+          const body = { name, party };
+          let method = "POST";
+          let url = "/candidates";
+
+          if (id) {
+            // Update existing
+            method = "PUT";
+            url = `/candidates/${id}`;
+          }
+
+          try {
+            const result = await apiFetch(url, {
+              method,
+              body: JSON.stringify(body),
+            });
+            showAlert(result.message, "success");
+
+            // Reset form state
+            e.target.reset();
+            document.getElementById("candidate-id").value = "";
+            document.getElementById("candidate-submit-btn").textContent =
+              "Add New";
+            document
+              .getElementById("candidate-submit-btn")
+              .classList.remove("btn-warning");
+            document
+              .getElementById("candidate-submit-btn")
+              .classList.add("btn-primary");
+            candidateToEdit = null;
+
+            loadAdminCandidates();
+            loadLiveResults();
+          } catch (error) {
+            // Handled by apiFetch
+          }
+        });
+
+      // --- INITIALIZATION ---
+
+      // Attach event listeners for nav clicks
+      document.querySelectorAll("#nav-tabs .nav-link").forEach((link) => {
+        link.addEventListener("click", (e) => {
+          const page = e.target.getAttribute("data-page");
+          if (page) {
+            e.preventDefault();
+            navigate(`page-${page}`);
+            if (page === "dashboard") loadUserProfile();
+            if (page === "admin") loadAdminCandidates();
+          }
+        });
+      });
+
+      // Start the application on the authentication page
+      setupAppUI(false); // Initialize to logged out state
+    </script>
+  </body>
+</html>
